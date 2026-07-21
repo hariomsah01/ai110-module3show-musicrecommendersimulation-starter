@@ -112,6 +112,24 @@ Rule) → Output (rank the scores and return the top K).
 - **Echo chamber.** Being purely content-based, it only recommends more of
   what the user already likes and never surprises them.
 
+### Optional Extensions Implemented
+
+All four optional challenges are built into the code and shown by
+`python -m src.main`:
+
+1. **Advanced features** — `songs.csv` gained `popularity`, `release_decade`,
+   `mood_tags`, `instrumentalness`, and `language`, and the scorer awards
+   points for decade matches, overlapping mood tags, popularity, and language.
+2. **Scoring modes (Strategy pattern)** — `balanced`, `genre-first`,
+   `mood-first`, and `energy-focused` modes, selectable via
+   `recommend_songs(..., strategy=STRATEGIES["mood-first"])`. See
+   `ai_interactions.md`.
+3. **Diversity penalty** — `recommend_songs(..., diversity_penalty=0.75)`
+   greedily docks points from a song whose artist/genre already appears in the
+   picks, so one artist or genre can't dominate the top results.
+4. **Formatted table** — output is rendered with `tabulate` (ASCII fallback if
+   it isn't installed), including a wrapped "Reasons" column.
+
 ---
 
 ## Getting Started
@@ -185,11 +203,26 @@ mood while sitting right at the target energy — exactly what we'd expect.
 
 ## Experiments You Tried
 
-Use this section to document the experiments you ran. For example:
+**Weight-shift experiment (energy ×2, genre ÷2).** I temporarily set
+`GENRE_WEIGHT = 1.0` and `ENERGY_WEIGHT = 2.0` and re-ran the adversarial
+"Conflicted" profile (folk + sad + energy 0.95):
 
-- What happened when you changed the weight on genre from 2.0 to 0.5
-- What happened when you added tempo or valence to the score
-- How did your system behave for different types of users
+- **Before** (genre 2.0 / energy 1.0): *Paper Boats* (energy 0.30) won by a
+  huge margin (3.35 vs. 1.00) — the sad folk match buried the energy request.
+- **After** (genre 1.0 / energy 2.0): the loud energy-matched songs
+  (*Neon Overdrive*, *Gym Hero*, *Iron Verdict*) all jumped to ~2.0 and filled
+  slots 2–5, and *Paper Boats*' lead shrank to 2.70 vs. 2.00.
+
+Verdict: for a "loud + sad" listener this was **more accurate** — the loud
+songs they actually asked for finally surfaced. But it made the normal
+profiles noisier (energy near-misses started outranking genre matches), so I
+**reverted** to genre 2.0 / energy 1.0 as the better all-round default. This
+is exactly the genre-over-energy bias documented in the model card.
+
+**Stress-testing different users.** Running five profiles (see
+`model_card.md` → Evaluation) showed the system handles clearly-defined tastes
+(pop, lofi, rock) very well, but leans on genre/mood whenever a profile's
+signals conflict.
 
 ---
 
